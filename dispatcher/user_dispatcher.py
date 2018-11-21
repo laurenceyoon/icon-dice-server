@@ -1,7 +1,6 @@
 import base64
 import hashlib
-import uuid
-from math import ceil
+import os
 
 import jwt
 from jsonrpcserver.aio import AsyncMethods
@@ -14,6 +13,7 @@ from db_manager import DBManager
 db_manager = DBManager(CONFIG.db_path)
 methods = AsyncMethods()
 PRIVATE_KEY = PrivateKey()
+USERS_RANDOM = dict()  # {address_bytes: random_bytes}
 
 
 class UserDispatcher:
@@ -32,8 +32,10 @@ class UserDispatcher:
         result: "0x1fcf7c34dc875681761bdaa5d75d770e78e8166b5c4f06c226c53300cbe85f57"
         """
         address = kwargs.get('address')
-        random = uuid.uuid4().hex + uuid.uuid4().hex
-        return random
+        address_bytes = bytes.fromhex(address[2:])
+        random = os.urandom(32)
+        USERS_RANDOM[address_bytes] = random
+        return '0x' + random.hex()
 
     @staticmethod
     @methods.add
@@ -48,21 +50,23 @@ class UserDispatcher:
         address = kwargs.get('address')
         signature = kwargs.get('signature')
 
-        await UserDispatcher.verify_signature(address, signature)
-        token = await UserDispatcher.generate_jwt(address)
+        address_bytes = bytes.fromhex(address[2:])
+        sign_bytes = base64.b64decode(signature.encode('utf-8'))
+
+        await UserDispatcher.verify_signature(address_bytes, sign_bytes)
+        token = UserDispatcher.generate_jwt(address)
         db_manager.add_token(address, token)
         return token
 
     @staticmethod
-    async def verify_signature(address, signature):
-        address_bytes = bytes.fromhex(address[2:])
-        sign_bytes = base64.b64decode(signature.encode('utf-8'))
+    async def verify_signature(address_bytes, sign_bytes):
+        random_bytes = USERS_RANDOM[address_bytes]
         recoverable_sig = PRIVATE_KEY.ecdsa_recoverable_deserialize(
             ser_sig=sign_bytes[:-1],
             rec_id=sign_bytes[-1]
         )
         raw_public_key = PRIVATE_KEY.ecdsa_recover(
-            msg=address_bytes,
+            msg=random_bytes,
             recover_sig=recoverable_sig,
             raw=True,
             digest=hashlib.sha3_256
@@ -70,26 +74,14 @@ class UserDispatcher:
         public_key = PublicKey(raw_public_key)
         hash_pub = hashlib.sha3_256(public_key.serialize(compressed=False)[1:]).digest()
         expect_address = hash_pub[-20:]
-        if expect_address != address:
+        if expect_address != address_bytes:
             raise RuntimeError
 
     @staticmethod
-    async def generate_jwt(address):
+    def generate_jwt(address):
         key = 'secret'
         token = jwt.encode(
             payload={'address': address},
             key=key,
-            algorithm='HS256').decode()
+            algorithm='HS256').decode('utf-8')
         return token
-
-    @staticmethod
-    async def fromhex(value):
-        if isinstance(value, str):
-            if 'hx' and 'hx' == value[:2]:
-                value = value[2:]
-            result = bytes.fromhex(value)
-        else:
-            byte_length = ceil(value.bit_length() / 8)
-            result = value.to_bytes(byte_length, 'big')
-        return result
-
