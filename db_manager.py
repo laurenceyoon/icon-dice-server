@@ -25,20 +25,27 @@ class DBManager:
         return list(self.__user_data)
 
     def add_user(self, address, token, nickname=''):
-        if address in self.get_addresses() and nickname:
-            self.__user_data[address]['nickname'] = nickname
-            new_user_info = self.__user_data[address]
-            new_user_info['nickname'] = nickname
-            self.__db.Put(address.encode('utf-8'),
-                          json.dumps(new_user_info).encode('utf-8'))
-        else:
-            user_info = json.dumps({
-                'token': token,
-                'nickname': nickname
-            })
-            self.__db.Put(address.encode('utf-8'),
-                          user_info.encode('utf-8'))
-        self.__update_user_data_from_db()
+        user_info = {
+            'token': token,
+            'nickname': nickname
+        }
+        self.__user_data[address] = user_info
+        self.__db.Put(address.encode('utf-8'),
+                      json.dumps(user_info).encode('utf-8'))
+
+    def update_token(self, address, token):
+        self.__user_data[address]['token'] = token
+        new_user_info = self.__user_data[address]
+
+        self.__db.Put(address.encode('utf-8'),
+                      json.dumps(new_user_info).encode('utf-8'))
+
+    def update_nickname(self, address, nickname):
+        self.__user_data[address]['nickname'] = nickname
+        new_user_info = self.__user_data[address]
+
+        self.__db.Put(address.encode('utf-8'),
+                      json.dumps(new_user_info).encode('utf-8'))
 
     def get_nickname_by_address(self, address):
         return self.__user_data[address]['nickname']

@@ -33,7 +33,7 @@ class TestUserAuth(unittest.TestCase):
         self.assertEqual(response.status, 200)
 
     def test_login(self):
-        # test_login_hash
+        # test login_hash
         response = http_client.request(method_name='login_hash', address=test_address)
         result = json.loads(response.text)['result']
         random_bytes = bytes.fromhex(result[2:])
@@ -42,7 +42,7 @@ class TestUserAuth(unittest.TestCase):
         self.assertNotEqual(result, random_result_example)
         self.assertEqual(len(result), 66)
 
-        # test_login
+        # test login
         signature_base64str = self.sign(PRIVATE_KEY, random_bytes)
         response = http_client.request(method_name='login', address=test_address, signature=signature_base64str)
         result = json.loads(response.text)['result']
@@ -51,10 +51,21 @@ class TestUserAuth(unittest.TestCase):
 
         self.assertEqual(result, token)
 
-        # set nickname
+        # test set_nickname
         response = http_client.request(method_name='set_nickname', token=token, nickname='june')
         user_data = requests.get(CONFIG.http_uri + '/db').json()
         nickname = user_data[test_address]['nickname']
+
+        self.assertEqual(nickname, 'june')
+
+        # test login again
+        response = http_client.request(method_name='login_hash', address=test_address)
+        random_result = json.loads(response.text)['result']
+        random_bytes = bytes.fromhex(random_result[2:])
+        signature_base64str = self.sign(PRIVATE_KEY, random_bytes)
+        response = http_client.request(method_name='login', address=test_address, signature=signature_base64str)
+        nickname_response = http_client.request(method_name='get_nickname', token=token)
+        nickname = json.loads(nickname_response.text)['result']
 
         self.assertEqual(nickname, 'june')
 

@@ -1,5 +1,7 @@
 import asyncio
+import base64
 import hashlib
+import json
 import unittest
 
 import websockets
@@ -35,12 +37,29 @@ class TestWebsocketClient(unittest.TestCase):
 
     def test_websocket_game(self):
         loop = asyncio.new_event_loop()
-        loop.run_until_complete(TestWebsocketClient.game())
+        loop.run_until_complete(self.game())
 
-    @staticmethod
-    async def game():
-        response = http_client.request(method_name='login_hash', address=test_address)
+    async def game(self):
+        token = await self.get_token_from_login()
+
         uri = CONFIG.ws_uri + '/game'
         async with websockets.connect(uri) as websocket:
-            token = ''
             await websocket.send(token)
+
+    async def get_token_from_login(self):
+        response = http_client.request(method_name='login_hash', address=test_address)
+        random_result = json.loads(response.text)['result']
+        random_bytes = bytes.fromhex(random_result[2:])
+        signature_base64str = await self.sign(PRIVATE_KEY, random_bytes)
+        response = http_client.request(method_name='login', address=test_address, signature=signature_base64str)
+        token = json.loads(response.text)['result']
+        return token
+
+    async def sign(self, private_key: PrivateKey, random_bytes):
+        raw_sig = private_key.ecdsa_sign_recoverable(msg=random_bytes,
+                                                     raw=True,
+                                                     digest=hashlib.sha3_256)
+        serialized_sig, recover_id = private_key.ecdsa_recoverable_serialize(raw_sig)
+        signature = serialized_sig + bytes((recover_id,))
+        signature_base64str = base64.b64encode(signature).decode('utf-8')
+        return signature_base64str

@@ -54,7 +54,10 @@ class UserDispatcher:
 
         await UserDispatcher.verify_signature(address_bytes, sign_bytes)
         token = UserDispatcher.generate_jwt(address)
-        db_manager.add_user(address, token)
+        if address in db_manager.get_addresses():
+            db_manager.update_token(address, token)
+        else:
+            db_manager.add_user(address, token)
         return token
 
     @staticmethod
@@ -71,7 +74,7 @@ class UserDispatcher:
         token = kwargs.get('token')
         address = await UserDispatcher.get_address_from_token(token)
         nickname = kwargs.get('nickname')
-        db_manager.add_user(address, token, nickname)
+        db_manager.update_nickname(address, nickname)
 
         return "success"
 

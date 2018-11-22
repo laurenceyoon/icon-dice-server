@@ -1,3 +1,5 @@
+import logging
+
 import jwt
 from config import CONFIG
 from db_manager import db_manager
@@ -12,8 +14,8 @@ class GameDispatcher:
     async def game(request, ws):
         token = await ws.recv()
         tokens.add(token)
-        print(tokens)
-        pass
+        logging.debug(f"received token: {token}")
+        await ws.send('ok')
 
     @staticmethod
     async def hello(request, ws):
