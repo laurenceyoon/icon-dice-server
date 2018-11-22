@@ -2,8 +2,9 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.response import json, HTTPResponse
 from sanic_session import InMemorySessionInterface
-from dispatcher.user_dispatcher import UserDispatcher
+
 from dispatcher.game_dispatcher import GameDispatcher
+from dispatcher.user_dispatcher import UserDispatcher
 
 app = Sanic(__name__)
 app.add_route(UserDispatcher.dispatch, '/users', methods=['POST'])

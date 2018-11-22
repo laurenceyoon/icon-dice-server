@@ -7,10 +7,9 @@ from jsonrpcserver.aio import AsyncMethods
 from sanic import response
 from secp256k1 import PublicKey, PrivateKey
 
+from db_manager import db_manager
 from config import CONFIG
-from db_manager import DBManager
 
-db_manager = DBManager(CONFIG.db_path)
 methods = AsyncMethods()
 PRIVATE_KEY = PrivateKey()
 USERS_RANDOM = dict()  # {address_bytes: random_bytes}

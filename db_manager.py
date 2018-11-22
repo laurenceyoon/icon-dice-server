@@ -1,10 +1,11 @@
 import leveldb
 import json
+from config import CONFIG
 
 
 class DBManager:
-    def __init__(self, db_path):
-        self.__db = leveldb.LevelDB(db_path)
+    def __init__(self, db: leveldb.LevelDB):
+        self.__db = db
         self.__user_data = dict()  # {address: {'token': [token], 'nickname': [nickname]}}
 
     def __update_user_data_from_db(self):
@@ -29,3 +30,7 @@ class DBManager:
 
     def get_nickname_by_address(self, address):
         return self.__user_data[address]['nickname']
+
+
+DB = leveldb.LevelDB(CONFIG.db_path)
+db_manager = DBManager(DB)
