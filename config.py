@@ -11,5 +11,4 @@ class CONFIG:
     v3_uri = 'http://10.130.106.170:9000/api/v3'
     contract_address = 'cx6a84c2f001b8f58564a4411c4403294cd8cd9caf’'
     private_key = PrivateKey()
-    public_key = PublicKey(private_key)
-    address = hashlib.sha3_256(public_key.serialize(compressed=False)[1:]).digest()[-20:]
+    address = hashlib.sha3_256(private_key.pubkey.serialize(compressed=False)[1:]).digest()[-20:]
