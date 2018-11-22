@@ -9,6 +9,10 @@ class DBManager:
         self.__user_data = dict()  # {address: {'token': [token], 'nickname': [nickname]}}
         self.__update_user_data_from_db()
 
+    @property
+    def user_data(self):
+        return self.__user_data
+
     def __update_user_data_from_db(self):
         self.__user_data = {address.decode('utf-8'): json.loads(info.decode('utf-8'))
                             for address, info in self.__db.RangeIter()}
@@ -21,12 +25,19 @@ class DBManager:
         return list(self.__user_data)
 
     def add_user(self, address, token, nickname=''):
-        additional_info = json.dumps({
-            'token': token,
-            'nickname': nickname
-        })
-        self.__db.Put(address.encode('utf-8'),
-                      additional_info.encode('utf-8'))
+        if address in self.get_addresses() and nickname:
+            self.__user_data[address]['nickname'] = nickname
+            new_user_info = self.__user_data[address]
+            new_user_info['nickname'] = nickname
+            self.__db.Put(address.encode('utf-8'),
+                          json.dumps(new_user_info).encode('utf-8'))
+        else:
+            user_info = json.dumps({
+                'token': token,
+                'nickname': nickname
+            })
+            self.__db.Put(address.encode('utf-8'),
+                          user_info.encode('utf-8'))
         self.__update_user_data_from_db()
 
     def get_nickname_by_address(self, address):

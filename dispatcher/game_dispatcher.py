@@ -3,13 +3,16 @@ from config import CONFIG
 from db_manager import db_manager
 import json
 
-USERS = dict()
+tokens = set()
+# USERS = dict()
 
 
 class GameDispatcher:
     @staticmethod
     async def game(request, ws):
-        request_params = await ws.recv()
+        token = await ws.recv()
+        tokens.add(token)
+        print(tokens)
         pass
 
     @staticmethod

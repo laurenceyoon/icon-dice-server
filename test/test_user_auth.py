@@ -4,6 +4,7 @@ import json
 import unittest
 
 import jwt
+import requests
 from jsonrpcclient.clients.http_client import HTTPClient
 from secp256k1 import PrivateKey
 
@@ -49,6 +50,13 @@ class TestUserAuth(unittest.TestCase):
         token = UserDispatcher.generate_jwt(test_address)
 
         self.assertEqual(result, token)
+
+        # set nickname
+        response = http_client.request(method_name='set_nickname', token=token, nickname='june')
+        user_data = requests.get(CONFIG.http_uri + '/db').json()
+        nickname = user_data[test_address]['nickname']
+
+        self.assertEqual(nickname, 'june')
 
     def sign(self, private_key: PrivateKey, random_bytes):
         raw_sig = private_key.ecdsa_sign_recoverable(msg=random_bytes,
