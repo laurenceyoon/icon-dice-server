@@ -10,6 +10,7 @@ game_room = dict()
 address_rooms = dict()
 first_start_game_result = ''
 first_reveal_game_result = ''
+end_game_results = dict()
 
 condition_player_waiting: Condition = None
 condition_start_game: Condition = None
@@ -109,13 +110,11 @@ class GameDispatcher:
                 condition_reveal_game.notify()
 
         first_reveal_game_result = ''  # clear memory
-        await ws.send(result)
 
         # ========== mini round 2: end game ==========
         if condition_end_game is None:
             condition_end_game = Condition()
 
-        results = dict()
         # first player
         if opposite_address is None:
             async with condition_end_game:
@@ -127,20 +126,34 @@ class GameDispatcher:
                 addr1=address_rooms,
                 addr2=opposite_address
             )
+            end_game_results['end_game_tx_hash'] = end_game_tx_hash
 
             result = await GameDispatcher.get_result_loop(end_game_tx_hash)
+
+            dice_result = result['data']
+            dd = {
+                dice_result[0]: dice_result[2],
+                dice_result[1]: dice_result[3],
+                'end_game_tx_hash': end_game_tx_hash
+            }
+
+            end_game_results[my_address] = dd
+            end_game_results[opposite_address] = dd.copy()
+
             async with condition_end_game:
                 condition_end_game.notify()
-            dice_result = result['data']
-            results[dice_result[0]] = dice_result[2]
-            results[dice_result[1]] = dice_result[3]
 
-        my_result = results[my_address]
-        opposite_result = [dice for address, dice in results.items() if my_address != address]
+        my_result = end_game_results[my_address].pop(my_address)
+        end_game_tx_hash = end_game_results[my_address].pop('end_game_tx_hash')
+        opposite_result = [dice for address, dice in end_game_results[my_address].items()][0]
+        end_game_results.pop(my_address)
+
         final_result = {
+            'end_game_tx_hash': end_game_tx_hash,
             'player_dice_result': my_result,
-            "opposite_dice_result": opposite_result[0]
+            "opposite_dice_result": opposite_result
         }
+
         await ws.send(json.dumps(final_result))
 
     @staticmethod
