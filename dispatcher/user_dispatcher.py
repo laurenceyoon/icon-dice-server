@@ -1,14 +1,12 @@
 import base64
-import hashlib
 import os
 
-import jwt
 from jsonrpcserver.aio import AsyncMethods
 from sanic import response
-from secp256k1 import PublicKey, PrivateKey
+from secp256k1 import PrivateKey
 
+import utils
 from db_manager import db_manager
-from config import CONFIG
 
 methods = AsyncMethods()
 PRIVATE_KEY = PrivateKey()
@@ -52,8 +50,14 @@ class UserDispatcher:
         address_bytes = bytes.fromhex(address[2:])
         sign_bytes = base64.b64decode(signature.encode('utf-8'))
 
-        await UserDispatcher.verify_signature(address_bytes, sign_bytes)
-        token = UserDispatcher.generate_jwt(address)
+        await utils.verify_signature(
+            address_bytes=address_bytes,
+            random_bytes=USERS_RANDOM[address_bytes],
+            sign_bytes=sign_bytes,
+            private_key=PRIVATE_KEY
+        )
+
+        token = utils.generate_jwt(address)
         if address in db_manager.get_addresses():
             db_manager.update_token(address, token)
         else:
@@ -72,7 +76,7 @@ class UserDispatcher:
 
         """
         token = kwargs.get('token')
-        address = await UserDispatcher.get_address_from_token(token)
+        address = utils.get_address_from_token(token)
         nickname = kwargs.get('nickname')
         db_manager.update_nickname(address, nickname)
 
@@ -88,39 +92,6 @@ class UserDispatcher:
         :return:
         nickname
         """
-        address = await UserDispatcher.get_address_from_token(kwargs.get('token'))
+        address = utils.get_address_from_token(kwargs.get('token'))
         nickname = db_manager.get_nickname_by_address(address)
         return nickname
-
-    @staticmethod
-    async def verify_signature(address_bytes, sign_bytes):
-        random_bytes = USERS_RANDOM[address_bytes]
-        recoverable_sig = PRIVATE_KEY.ecdsa_recoverable_deserialize(
-            ser_sig=sign_bytes[:-1],
-            rec_id=sign_bytes[-1]
-        )
-        raw_public_key = PRIVATE_KEY.ecdsa_recover(
-            msg=random_bytes,
-            recover_sig=recoverable_sig,
-            raw=True,
-            digest=hashlib.sha3_256
-        )
-        public_key = PublicKey(raw_public_key)
-        hash_pub = hashlib.sha3_256(public_key.serialize(compressed=False)[1:]).digest()
-        expect_address = hash_pub[-20:]
-        if expect_address != address_bytes:
-            raise RuntimeError
-
-    @staticmethod
-    def generate_jwt(address):
-        token = jwt.encode(
-            payload={'address': address},
-            key=CONFIG.jwt_key,
-            algorithm='HS256').decode('utf-8')
-        return token
-
-    @staticmethod
-    async def get_address_from_token(token: str):
-        token_bytes = token.encode('utf-8')
-        decoded = jwt.decode(token_bytes, CONFIG.jwt_key, algorithms='HS256')
-        return decoded['address']

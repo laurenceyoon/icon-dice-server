@@ -11,6 +11,7 @@ from secp256k1 import PrivateKey
 from app import app
 from config import CONFIG
 from dispatcher.user_dispatcher import UserDispatcher
+import utils
 
 http_client = HTTPClient(CONFIG.http_uri + '/users')
 
@@ -47,7 +48,7 @@ class TestUserAuth(unittest.TestCase):
         response = http_client.request(method_name='login', address=test_address, signature=signature_base64str)
         result = json.loads(response.text)['result']
 
-        token = UserDispatcher.generate_jwt(test_address)
+        token = utils.generate_jwt(test_address)
 
         self.assertEqual(result, token)
 
@@ -58,7 +59,7 @@ class TestUserAuth(unittest.TestCase):
 
         self.assertEqual(nickname, 'june')
 
-        # test login again
+        # test login again and nickname remains
         response = http_client.request(method_name='login_hash', address=test_address)
         random_result = json.loads(response.text)['result']
         random_bytes = bytes.fromhex(random_result[2:])
