@@ -8,10 +8,9 @@ import requests
 from jsonrpcclient.clients.http_client import HTTPClient
 from secp256k1 import PrivateKey
 
+import utils
 from app import app
 from config import CONFIG
-from dispatcher.user_dispatcher import UserDispatcher
-import utils
 
 http_client = HTTPClient(CONFIG.http_uri + '/users')
 

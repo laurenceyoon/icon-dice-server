@@ -1,3 +1,4 @@
+import json
 import os
 from asyncio import Condition
 
@@ -6,7 +7,7 @@ from db_manager import db_manager
 
 game_room = dict()
 address_rooms = dict()
-waiting_condition: Condition = Condition()
+waiting_condition: Condition = None
 
 
 class GameDispatcher:
@@ -18,8 +19,12 @@ class GameDispatcher:
 
     @staticmethod
     async def game(request, ws):
+        global waiting_condition
+        if waiting_condition is None:
+            waiting_condition = Condition()
         # round1
         token = await ws.recv()
+        print(f"token received: {token}")
         my_address = utils.get_address_from_token(token)
         address_rooms.pop(my_address, None)
 
@@ -27,21 +32,25 @@ class GameDispatcher:
         if not game_room:
             game_room_id = '0x' + os.urandom(32).hex()
             game_room[game_room_id] = (my_address, None)
+            print()
             async with waiting_condition:
+                print(f"waiting!")
                 await waiting_condition.wait()
         # second player
         else:
             game_room_id, (opposite_address, _) = next(iter(game_room.items()))
             game_room.pop(game_room_id)
 
-            await GameDispatcher.save_both_player_data(game_room_id, my_address, opposite_address)
+            GameDispatcher.save_both_player_data(game_room_id, my_address, opposite_address)
             async with waiting_condition:
+                print(f"notify!")
                 waiting_condition.notify()
 
-        await ws.send(address_rooms[my_address])
+        print(f"lock이 풀렸습니다")
+        await ws.send(json.dumps(address_rooms[my_address]))
 
     @staticmethod
-    async def save_both_player_data(game_room_id, my_address, opposite_address):
+    def save_both_player_data(game_room_id, my_address, opposite_address):
         my_nickname = db_manager.get_nickname_by_address(my_address)
         opposite_nickname = db_manager.get_nickname_by_address(opposite_address)
         address_rooms[my_address] = {

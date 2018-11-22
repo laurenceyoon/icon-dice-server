@@ -1,7 +1,10 @@
+import base64
 import hashlib
+import json
 
 import jwt
-from secp256k1 import PublicKey
+from jsonrpcclient.clients.http_client import HTTPClient
+from secp256k1 import PublicKey, PrivateKey
 
 from config import CONFIG
 
@@ -36,3 +39,33 @@ def generate_jwt(address):
         key=CONFIG.jwt_key,
         algorithm='HS256').decode('utf-8')
     return token
+
+
+def create_new_address_and_privkey():
+    private_key = PrivateKey()
+    serialized_pub = private_key.pubkey.serialize(compressed=False)
+    hashed_pub = hashlib.sha3_256(serialized_pub[1:]).digest()
+    address = "hx" + hashed_pub[-20:].hex()
+    return address, private_key
+
+
+async def get_token_from_login_process(address, private_key):
+    http_client = HTTPClient(CONFIG.http_uri + '/users')
+    response = http_client.request(method_name='login_hash', address=address)
+    random_result = json.loads(response.text)['result']
+    random_bytes = bytes.fromhex(random_result[2:])
+    signature_base64str = await sign(private_key, random_bytes)
+    response = http_client.request(method_name='login', address=address, signature=signature_base64str)
+    token = json.loads(response.text)['result']
+    response = http_client.request(method_name='set_nickname', token=token, nickname=address)
+    return token
+
+
+async def sign(private_key: PrivateKey, random_bytes):
+    raw_sig = private_key.ecdsa_sign_recoverable(msg=random_bytes,
+                                                 raw=True,
+                                                 digest=hashlib.sha3_256)
+    serialized_sig, recover_id = private_key.ecdsa_recoverable_serialize(raw_sig)
+    signature = serialized_sig + bytes((recover_id,))
+    signature_base64str = base64.b64encode(signature).decode('utf-8')
+    return signature_base64str

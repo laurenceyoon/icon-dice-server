@@ -1,21 +1,17 @@
 import asyncio
-import base64
-import hashlib
-import json
+from threading import Thread
 import unittest
 
 import websockets
 from jsonrpcclient.clients.http_client import HTTPClient
-from secp256k1 import PrivateKey
 
+import utils
 from app import app
 from config import CONFIG
 
 http_client = HTTPClient(CONFIG.http_uri + '/users')
-PRIVATE_KEY = PrivateKey()
-serialized_pub = PRIVATE_KEY.pubkey.serialize(compressed=False)
-hashed_pub = hashlib.sha3_256(serialized_pub[1:]).digest()
-test_address = "hx" + hashed_pub[-20:].hex()
+address1, private_key1 = utils.create_new_address_and_privkey()
+address2, private_key2 = utils.create_new_address_and_privkey()
 
 
 class TestWebsocketClient(unittest.TestCase):
@@ -25,41 +21,49 @@ class TestWebsocketClient(unittest.TestCase):
 
     def test_websocket_hello(self):
         loop = asyncio.new_event_loop()
-        loop.run_until_complete(TestWebsocketClient.hello())
+        nickname = loop.run_until_complete(self.hello())
 
-    @staticmethod
-    async def hello():
+        self.assertEqual(nickname, 'nickname')
+
+    async def hello(self):
         uri = CONFIG.ws_uri + '/hello'
         async with websockets.connect(uri) as websocket:
             await websocket.send('hello')
             nickname = await websocket.recv()
-            print({nickname})
+
+        return nickname
 
     def test_websocket_game(self):
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(self.game())
+        thread1 = Thread(target=self._run, args=(address1, private_key1, ))
+        thread1.start()
 
-    async def game(self):
-        token = await self.get_token_from_login()
+        thread2 = Thread(target=self._run, args=(address2, private_key2, ))
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+    def _run(self, address, private_key):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.create_task(self.game(address, private_key))
+        loop.run_forever()
+
+    async def game(self, address, private_key):
+        token = await utils.get_token_from_login_process(address, private_key)
+        print(f"token type? {type(token)}")
 
         uri = CONFIG.ws_uri + '/game'
         async with websockets.connect(uri) as websocket:
             await websocket.send(token)
+            response = await websocket.recv()
+            print(f"got response! {response}")
 
-    async def get_token_from_login(self):
-        response = http_client.request(method_name='login_hash', address=test_address)
-        random_result = json.loads(response.text)['result']
-        random_bytes = bytes.fromhex(random_result[2:])
-        signature_base64str = await self.sign(PRIVATE_KEY, random_bytes)
-        response = http_client.request(method_name='login', address=test_address, signature=signature_base64str)
-        token = json.loads(response.text)['result']
-        return token
+        async def _stop():
+            loop.stop()
 
-    async def sign(self, private_key: PrivateKey, random_bytes):
-        raw_sig = private_key.ecdsa_sign_recoverable(msg=random_bytes,
-                                                     raw=True,
-                                                     digest=hashlib.sha3_256)
-        serialized_sig, recover_id = private_key.ecdsa_recoverable_serialize(raw_sig)
-        signature = serialized_sig + bytes((recover_id,))
-        signature_base64str = base64.b64encode(signature).decode('utf-8')
-        return signature_base64str
+        loop = asyncio.get_event_loop()
+        loop.create_task(_stop())
+
+        return response
+
