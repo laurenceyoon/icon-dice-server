@@ -55,8 +55,40 @@ class UserDispatcher:
 
         await UserDispatcher.verify_signature(address_bytes, sign_bytes)
         token = UserDispatcher.generate_jwt(address)
-        db_manager.add_token(address, token)
+        db_manager.add_user(address, token)
         return token
+
+    @staticmethod
+    @methods.add
+    async def set_nickname(**kwargs):
+        """
+
+        :param kwargs:
+        token:
+        nickname:
+        :return:
+
+        """
+        token = kwargs.get('token')
+        address = await UserDispatcher.get_address_from_token(token)
+        nickname = kwargs.get('nickname')
+        db_manager.add_user(address, token, nickname)
+
+        return "success"
+
+    @staticmethod
+    @methods.add
+    async def get_nickname(**kwargs):
+        """
+
+        :param kwargs:
+        token:
+        :return:
+        nickname
+        """
+        address = await UserDispatcher.get_address_from_token(kwargs.get('token'))
+        nickname = db_manager.get_nickname_by_address(address)
+        return nickname
 
     @staticmethod
     async def verify_signature(address_bytes, sign_bytes):
@@ -79,9 +111,14 @@ class UserDispatcher:
 
     @staticmethod
     def generate_jwt(address):
-        key = 'secret'
         token = jwt.encode(
             payload={'address': address},
-            key=key,
+            key=CONFIG.jwt_key,
             algorithm='HS256').decode('utf-8')
         return token
+
+    @staticmethod
+    async def get_address_from_token(token: str):
+        token_bytes = token.encode('utf-8')
+        decoded = jwt.decode(token_bytes, CONFIG.jwt_key, algorithms='HS256')
+        return decoded['address']
