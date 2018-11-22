@@ -1,6 +1,6 @@
 import json
 import os
-import time
+import asyncio
 from asyncio import Condition
 
 import utils
@@ -62,11 +62,16 @@ class GameDispatcher:
         if condition_start_game is None:
             condition_start_game = Condition()
         start_game_tx_hash = await ws.recv()
+        if isinstance(start_game_tx_hash, bytes):
+            start_game_tx_hash = start_game_tx_hash.decode('utf-8')
+
+        print(f"start_game_tx_hash : {start_game_tx_hash}")
 
         # first player
         if not first_start_game_result:
-            result = await GameDispatcher.get_result_loop(start_game_tx_hash)
             first_start_game_result = start_game_tx_hash
+
+            result = await GameDispatcher.get_result_loop(start_game_tx_hash)
             async with condition_start_game:
                 await condition_start_game.wait()
         # second player
@@ -83,11 +88,14 @@ class GameDispatcher:
         if condition_reveal_game is None:
             condition_reveal_game = Condition()
         reveal_game_tx_hash = await ws.recv()
+        if isinstance(reveal_game_tx_hash, bytes):
+            reveal_game_tx_hash = reveal_game_tx_hash.decode('utf-8')
 
         # first player
         if not first_reveal_game_result:
-            result = await GameDispatcher.get_result_loop(reveal_game_tx_hash)
             first_reveal_game_result = reveal_game_tx_hash
+
+            result = await GameDispatcher.get_result_loop(reveal_game_tx_hash)
             async with condition_reveal_game:
                 await condition_reveal_game.wait()
         # second player
@@ -122,6 +130,7 @@ class GameDispatcher:
             try:
                 response = utils.get_transaction_result(start_game_tx_hash)
                 break
-            except Exception:
-                time.sleep(0.5)
+            except Exception as e:
+                print(f"error {e}")
+                await asyncio.sleep(0.5)
         return 'success'
