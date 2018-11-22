@@ -8,7 +8,8 @@ from dispatcher.user_dispatcher import UserDispatcher
 
 app = Sanic(__name__)
 app.add_route(UserDispatcher.dispatch, '/users', methods=['POST'])
-app.add_route(GameDispatcher.websocket_dispatch, '/game')
+app.add_websocket_route(GameDispatcher.game, '/game')
+app.add_websocket_route(GameDispatcher.hello, '/hello')
 app.session_interface = InMemorySessionInterface()
 
 

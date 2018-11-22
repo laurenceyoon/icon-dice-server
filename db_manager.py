@@ -7,6 +7,7 @@ class DBManager:
     def __init__(self, db: leveldb.LevelDB):
         self.__db = db
         self.__user_data = dict()  # {address: {'token': [token], 'nickname': [nickname]}}
+        self.__update_user_data_from_db()
 
     def __update_user_data_from_db(self):
         self.__user_data = {address.decode('utf-8'): json.loads(info.decode('utf-8'))

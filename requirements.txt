@@ -8,3 +8,4 @@ jsonrpcserver==3.5.6
 leveldb
 secp256k1
 PyJWT
+websockets==5.0.1

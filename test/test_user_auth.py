@@ -11,12 +11,13 @@ from app import app
 from config import CONFIG
 from dispatcher.user_dispatcher import UserDispatcher
 
-http_client = HTTPClient(CONFIG.uri + '/users')
+http_client = HTTPClient(CONFIG.http_uri + '/users')
 
 PRIVATE_KEY = PrivateKey()
 serialized_pub = PRIVATE_KEY.pubkey.serialize(compressed=False)
 hashed_pub = hashlib.sha3_256(serialized_pub[1:]).digest()
 test_address = "hx" + hashed_pub[-20:].hex()
+test_token = None
 
 
 class TestUserAuth(unittest.TestCase):

@@ -1,17 +1,22 @@
 import jwt
 from config import CONFIG
 from db_manager import db_manager
+import json
 
 USERS = dict()
 
 
 class GameDispatcher:
     @staticmethod
-    async def websocket_dispatch(request, ws):
-        request = await ws.recv()
-        address = GameDispatcher.get_address_from_token(request.get('token'))
-        db_manager.get_nickname_by_address(address)
+    async def game(request, ws):
+        request_params = await ws.recv()
         pass
+
+    @staticmethod
+    async def hello(request, ws):
+        hello = await ws.recv()
+        print(hello)
+        await ws.send('nickname')
 
     @staticmethod
     async def get_address_from_token(token: str):
