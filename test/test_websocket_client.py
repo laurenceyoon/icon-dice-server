@@ -59,7 +59,6 @@ class TestWebsocketClient(unittest.TestCase):
         async with websockets.connect(uri) as websocket:
             # [1] phase 1 start
             await websocket.send(token)
-            token = await websocket.recv()
             response1 = json.loads(await websocket.recv())
             print(f"response1: {response1}")
             # response1 = json.loads(await websocket.recv())

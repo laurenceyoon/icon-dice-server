@@ -35,7 +35,6 @@ class GameDispatcher:
         token = await ws.recv()
         if isinstance(token, bytes):
             token = token.decode('utf-8')
-        await ws.send(token)
 
         print(f"token received: {token}")
         my_address = utils.get_address_from_token(token)
