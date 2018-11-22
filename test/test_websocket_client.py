@@ -1,6 +1,7 @@
 import asyncio
-from threading import Thread
+import json
 import unittest
+from threading import Thread
 
 import websockets
 from jsonrpcclient.clients.http_client import HTTPClient
@@ -9,7 +10,8 @@ import utils
 from app import app
 from config import CONFIG
 
-http_client = HTTPClient(CONFIG.http_uri + '/users')
+user_client = HTTPClient(CONFIG.http_uri + '/users')
+v3_client = HTTPClient(CONFIG.v3_uri)
 address1, private_key1 = utils.create_new_address_and_privkey()
 address2, private_key2 = utils.create_new_address_and_privkey()
 
@@ -34,14 +36,14 @@ class TestWebsocketClient(unittest.TestCase):
         return nickname
 
     def test_websocket_game(self):
-        thread1 = Thread(target=self._run, args=(address1, private_key1, ))
-        thread1.start()
+        player1_thread = Thread(target=self._run, args=(address1, private_key1, ))
+        player1_thread.start()
 
-        thread2 = Thread(target=self._run, args=(address2, private_key2, ))
-        thread2.start()
+        player2_thread = Thread(target=self._run, args=(address2, private_key2, ))
+        player2_thread.start()
 
-        thread1.join()
-        thread2.join()
+        player1_thread.join()
+        player2_thread.join()
 
     def _run(self, address, private_key):
         loop = asyncio.new_event_loop()
@@ -51,13 +53,27 @@ class TestWebsocketClient(unittest.TestCase):
 
     async def game(self, address, private_key):
         token = await utils.get_token_from_login_process(address, private_key)
-        print(f"token type? {type(token)}")
+        print(f"token: {token}")
 
         uri = CONFIG.ws_uri + '/game'
         async with websockets.connect(uri) as websocket:
+            # [1] phase 1 start
             await websocket.send(token)
-            response = await websocket.recv()
-            print(f"got response! {response}")
+            token = await websocket.recv()
+            response1 = json.loads(await websocket.recv())
+            print(f"response1: {response1}")
+            # response1 = json.loads(await websocket.recv())
+
+            game_room_id = response1.get('game_room_id')
+            opposite_address = response1.get('opposite_address')
+            opposite_nickname = response1.get('opposite_nickname')
+            print(f"game_room_id: {game_room_id}, "
+                  f"opposite_address: {opposite_address}, "
+                  f"opposite_nick: {opposite_nickname}")
+
+            # [2] phase 1 end
+            params, random = utils.get_start_game_params(address1, game_room_id)
+            print(f"params: {params}, random: {random}")
 
         async def _stop():
             loop.stop()
@@ -65,5 +81,8 @@ class TestWebsocketClient(unittest.TestCase):
         loop = asyncio.get_event_loop()
         loop.create_task(_stop())
 
-        return response
+        return response1
 
+    def test_v3(self):
+        last_block_response = v3_client.request(method_name='icx_getLastBlock')
+        print(last_block_response.data)

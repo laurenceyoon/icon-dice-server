@@ -1,6 +1,8 @@
 import base64
 import hashlib
 import json
+import os
+import time
 
 import jwt
 from jsonrpcclient.clients.http_client import HTTPClient
@@ -69,3 +71,32 @@ async def sign(private_key: PrivateKey, random_bytes):
     signature = serialized_sig + bytes((recover_id,))
     signature_base64str = base64.b64encode(signature).decode('utf-8')
     return signature_base64str
+
+
+def get_start_game_params(address, game_room_id):
+    random = os.urandom(32)
+    digested_random = hashlib.sha3_256(random).digest()
+    params = {
+        "version": "0x3",
+        "from": address,
+        "value": "0x0",
+        "stepLimit": "0x3000000",
+        "timestamp": hex(int(time.time())),
+        "nid": "0x3",
+        "nonce": "0x1",
+        "to": CONFIG.contract_address,
+        "dataType": "call",
+        "data": {
+            "method": "start_game",
+            "params": {
+                "game_id": game_room_id,
+                "sha_key": '0x' + digested_random.hex()
+            }
+        }
+    }
+    return params, random
+
+
+def get_transaction_result(tx_hash):
+    response = HTTPClient(CONFIG.v3_uri).request(method_name='icx_getTransactionResult', txHash=tx_hash)
+    return response
