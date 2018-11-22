@@ -1,6 +1,6 @@
+import asyncio
 import json
 import os
-import asyncio
 from asyncio import Condition
 
 import utils
@@ -10,9 +10,11 @@ game_room = dict()
 address_rooms = dict()
 first_start_game_result = ''
 first_reveal_game_result = ''
+
 condition_player_waiting: Condition = None
 condition_start_game: Condition = None
 condition_reveal_game: Condition = None
+condition_end_game: Condition = None
 
 
 class GameDispatcher:
@@ -40,6 +42,7 @@ class GameDispatcher:
         my_address = utils.get_address_from_token(token)
         address_rooms.pop(my_address, None)
 
+        opposite_address = None
         # first player
         if not game_room:
             game_room_id = '0x' + os.urandom(32).hex()
@@ -81,10 +84,11 @@ class GameDispatcher:
                 condition_start_game.notify()
 
         first_start_game_result = ''  # clear memory
-        await ws.send(result)
+        await ws.send('success')
 
         # ============================ round3 ============================
-        global first_reveal_game_result, condition_reveal_game
+        # ========== mini round 1: reveal game ==========
+        global first_reveal_game_result, condition_reveal_game, condition_end_game
         if condition_reveal_game is None:
             condition_reveal_game = Condition()
         reveal_game_tx_hash = await ws.recv()
@@ -107,7 +111,37 @@ class GameDispatcher:
         first_reveal_game_result = ''  # clear memory
         await ws.send(result)
 
-        # TODO end game request!!!
+        # ========== mini round 2: end game ==========
+        if condition_end_game is None:
+            condition_end_game = Condition()
+
+        results = dict()
+        # first player
+        if opposite_address is None:
+            async with condition_end_game:
+                condition_end_game.wait()
+        # second player who knows both addresses
+        else:
+            end_game_tx_hash = utils.send_end_game_request(
+                game_room_id=game_room_id,
+                addr1=address_rooms,
+                addr2=opposite_address
+            )
+
+            result = await GameDispatcher.get_result_loop(end_game_tx_hash)
+            async with condition_end_game:
+                condition_end_game.notify()
+            dice_result = result['data']
+            results[dice_result[0]] = dice_result[2]
+            results[dice_result[1]] = dice_result[3]
+
+        my_result = results[my_address]
+        opposite_result = [dice for address, dice in results.items() if my_address != address]
+        final_result = {
+            'player_dice_result': my_result,
+            "opposite_dice_result": opposite_result[0]
+        }
+        await ws.send(json.dumps(final_result))
 
     @staticmethod
     def save_response_to_both_players(game_room_id, my_address, opposite_address):
@@ -125,12 +159,12 @@ class GameDispatcher:
         }
 
     @staticmethod
-    async def get_result_loop(start_game_tx_hash):
+    async def get_result_loop(tx_hash):
         while True:
             try:
-                response = utils.get_transaction_result(start_game_tx_hash)
+                response = utils.get_transaction_result(tx_hash)
                 break
             except Exception as e:
                 print(f"error {e}")
                 await asyncio.sleep(0.5)
-        return 'success'
+        return response

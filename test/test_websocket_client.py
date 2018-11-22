@@ -57,11 +57,9 @@ class TestWebsocketClient(unittest.TestCase):
 
         uri = CONFIG.ws_uri + '/game'
         async with websockets.connect(uri) as websocket:
-            # [1] phase 1 start
+            # round 1
             await websocket.send(token)
             response1 = json.loads(await websocket.recv())
-            print(f"response1: {response1}")
-            # response1 = json.loads(await websocket.recv())
 
             game_room_id = response1.get('game_room_id')
             opposite_address = response1.get('opposite_address')
@@ -70,7 +68,7 @@ class TestWebsocketClient(unittest.TestCase):
                   f"opposite_address: {opposite_address}, "
                   f"opposite_nick: {opposite_nickname}")
 
-            # [2] phase 1 end
+            # round 2
             params, random = utils.get_start_game_params(address1, game_room_id)
             print(f"params: {params}, random: {random}")
 
@@ -84,4 +82,4 @@ class TestWebsocketClient(unittest.TestCase):
 
     def test_v3(self):
         last_block_response = v3_client.request(method_name='icx_getLastBlock')
-        print(last_block_response.data)
+        print(last_block_response.text, type(last_block_response.text))

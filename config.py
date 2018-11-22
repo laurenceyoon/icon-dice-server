@@ -1,6 +1,8 @@
-import hashlib
+import binascii
 
-from secp256k1 import PrivateKey, PublicKey
+from secp256k1 import PrivateKey
+
+from icx_wallet import IcxWallet
 
 
 class CONFIG:
@@ -10,5 +12,7 @@ class CONFIG:
     jwt_key = 'thisissecret'
     v3_uri = 'https://bicon.net.solidwallet.io/api/v3'
     contract_address = 'cx6a84c2f001b8f58564a4411c4403294cd8cd9caf’'
-    private_key = PrivateKey()
-    address = hashlib.sha3_256(private_key.pubkey.serialize(compressed=False)[1:]).digest()[-20:]
+    deserialized_private_key = "5257a9df239888730ebf9eba217305cac8bbfe82c23c0afcade0ec94854489e3"
+    private_key = PrivateKey(binascii.unhexlify(deserialized_private_key))
+    address = 'hxa94f1eb1ba891c680d00bcf737c164dc361fe514'
+    icx_wallet = IcxWallet(private_key)
