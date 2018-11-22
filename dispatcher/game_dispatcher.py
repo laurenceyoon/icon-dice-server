@@ -14,6 +14,9 @@ class GameDispatcher:
     @staticmethod
     async def hello(request, ws):
         hello = await ws.recv()
+        if isinstance(hello, bytes):
+            hello = hello.decode('utf-8')
+
         print(hello)
         await ws.send('nickname')
 
@@ -24,6 +27,10 @@ class GameDispatcher:
             waiting_condition = Condition()
         # round1
         token = await ws.recv()
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
+        await ws.send(token)
+
         print(f"token received: {token}")
         my_address = utils.get_address_from_token(token)
         address_rooms.pop(my_address, None)
