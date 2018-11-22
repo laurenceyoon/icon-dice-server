@@ -27,11 +27,11 @@ class GameDispatcher:
 
     @staticmethod
     async def game(request, ws):
-        global condition_player_waiting, game_room, address_rooms
+        # ============================ round1 ============================
+        global condition_player_waiting
         if condition_player_waiting is None:
             condition_player_waiting = Condition()
 
-        # ============================ round1 ============================
         token = await ws.recv()
         if isinstance(token, bytes):
             token = token.decode('utf-8')
@@ -56,7 +56,6 @@ class GameDispatcher:
             async with condition_player_waiting:
                 condition_player_waiting.notify()
 
-        game_room, address_rooms = dict(), dict()  # clear memory
         await ws.send(json.dumps(address_rooms[my_address]))
 
         # ============================ round2 ============================

@@ -94,6 +94,8 @@ def get_start_game_params(address, game_room_id):
             }
         }
     }
+    # hash_for_sign = generate_hash(params)
+    # params["signature"] = create_signature(hash_for_sign)
     return params, random
 
 
