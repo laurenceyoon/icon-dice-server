@@ -101,5 +101,6 @@ def send_end_game_request(game_room_id, addr1, addr2) -> str:
         }
     }
     params = CONFIG.icx_wallet.create_icx_origin_v3(data)
+    print(f"params: {params}")
     response = HTTPClient(CONFIG.v3_uri).request('icx_sendTransaction', params)
     return json.loads(response.text)['result']  # tx_hash

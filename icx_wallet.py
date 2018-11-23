@@ -44,10 +44,10 @@ class IcxWallet:
         params = dict()
         params["version"] = "0x3"
         params["from"] = self.address
-        params["to"] = self.to_address
+        params["to"] = "cx6a84c2f001b8f58564a4411c4403294cd8cd9caf"
         params["value"] = '0x0'
         params["stepLimit"] = "0x3000000"
-        params["timestamp"] = hex(int(time.time()))
+        params["timestamp"] = hex(int(time.time() * 1_000_000))
         params["nonce"] = "0x0"
         params["nid"] = self.nid
         params["dataType"] = "call"

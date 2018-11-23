@@ -95,6 +95,7 @@ class GameDispatcher:
         reveal_game_tx_hash = await ws.recv()
         if isinstance(reveal_game_tx_hash, bytes):
             reveal_game_tx_hash = reveal_game_tx_hash.decode('utf-8')
+        print(f"reveal_game_tx_hash : {start_game_tx_hash}")
 
         # first player
         if not first_reveal_game_result:
@@ -118,31 +119,33 @@ class GameDispatcher:
         # first player
         if opposite_address is None:
             async with condition_end_game:
-                condition_end_game.wait()
+                await condition_end_game.wait()
         # second player who knows both addresses
         else:
             end_game_tx_hash = utils.send_end_game_request(
                 game_room_id=game_room_id,
-                addr1=address_rooms,
+                addr1=my_address,
                 addr2=opposite_address
             )
-            end_game_results['end_game_tx_hash'] = end_game_tx_hash
-
+            print(f"end_game_tx_hash : {end_game_tx_hash}")
             result = await GameDispatcher.get_result_loop(end_game_tx_hash)
 
-            dice_result = result['data']
+            dice_result = result['eventLogs'][0]['data']
             dd = {
-                dice_result[0]: dice_result[2],
-                dice_result[1]: dice_result[3],
+                dice_result[0]: int(dice_result[2], 16),
+                dice_result[1]: int(dice_result[3], 16),
                 'end_game_tx_hash': end_game_tx_hash
             }
 
             end_game_results[my_address] = dd
             end_game_results[opposite_address] = dd.copy()
+            print(end_game_results)
 
             async with condition_end_game:
                 condition_end_game.notify()
 
+        print(my_address)
+        print(end_game_results)
         my_result = end_game_results[my_address].pop(my_address)
         end_game_tx_hash = end_game_results[my_address].pop('end_game_tx_hash')
         opposite_result = [dice for address, dice in end_game_results[my_address].items()][0]
