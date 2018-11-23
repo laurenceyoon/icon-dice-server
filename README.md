@@ -43,33 +43,34 @@ It's simple as this:
 
 * http request
 
-  ```python
-  import requests
+```python
+import requests
 
-  uri = 'http://127.0.0.1:8000'
-  response = requests.get(uri)
-  print(response)
+uri = 'http://127.0.0.1:8000'
+response = requests.get(uri)
+print(response)
 
-  # {"Hello": "ICONDICE world"}
-  ```
+# {"Hello": "ICONDICE world"}
+```
 
-  Or simply by terminal:
-  ```
-  $ curl http://127.0.0.1:8000
-  >>  {"Hello": "ICONDICE world"}
-  ```
+> Otherwise, simply by terminal:
+  
+```
+$ curl http://127.0.0.1:8000
+>>  {"Hello": "ICONDICE world"}
+```
 
 * websocket Request
 
-  ```python
-  uri = 'ws://127.0.0.1:8000/hello'
-  async with websockets.connect(uri) as websocket:
-      await websocket.send('hello')
-      response = await websocket.recv()
-      print(response)
+```python
+uri = 'ws://127.0.0.1:8000/hello'
+async with websockets.connect(uri) as websocket:
+  await websocket.send('hello')
+  response = await websocket.recv()
+  print(response)
 
-  # 'ICONDICE websocket'
-  ```
+# 'ICONDICE websocket'
+```
 
 #### Login
 
