@@ -87,7 +87,7 @@ url = 'https://bicon.net.solidwallet.io/api/v3'
 http_client = HTTPClient(url)
 response = http_client.request(method_name='login_hash', address=test_address)
 random_bytes = bytes.fromhex(json.loads(response.text)['result'][2:])
-signature_base64str = utils.sign(PRIVATE_KEY, random_bytes)
+signature_base64str = utils.sign(private_key, random_bytes)
 
 # login and get your token
 response = http_client.request(method_name='login', address=test_address, signature=signature_base64str)
