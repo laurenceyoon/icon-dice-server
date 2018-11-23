@@ -26,7 +26,7 @@ class GameDispatcher:
             hello = hello.decode('utf-8')
 
         print(hello)
-        await ws.send('nickname')
+        await ws.send('ICONDICE websocket')
 
     @staticmethod
     async def game(request, ws):

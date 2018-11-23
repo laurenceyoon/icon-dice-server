@@ -1,4 +1,3 @@
-import base64
 import hashlib
 import json
 import unittest
@@ -43,7 +42,7 @@ class TestUserAuth(unittest.TestCase):
         self.assertEqual(len(result), 66)
 
         # test login
-        signature_base64str = self.sign(PRIVATE_KEY, random_bytes)
+        signature_base64str = utils.sign(PRIVATE_KEY, random_bytes)
         response = http_client.request(method_name='login', address=test_address, signature=signature_base64str)
         result = json.loads(response.text)['result']
 
@@ -62,21 +61,12 @@ class TestUserAuth(unittest.TestCase):
         response = http_client.request(method_name='login_hash', address=test_address)
         random_result = json.loads(response.text)['result']
         random_bytes = bytes.fromhex(random_result[2:])
-        signature_base64str = self.sign(PRIVATE_KEY, random_bytes)
+        signature_base64str = utils.sign(PRIVATE_KEY, random_bytes)
         response = http_client.request(method_name='login', address=test_address, signature=signature_base64str)
         nickname_response = http_client.request(method_name='get_nickname', token=token)
         nickname = json.loads(nickname_response.text)['result']
 
         self.assertEqual(nickname, 'june')
-
-    def sign(self, private_key: PrivateKey, random_bytes):
-        raw_sig = private_key.ecdsa_sign_recoverable(msg=random_bytes,
-                                                     raw=True,
-                                                     digest=hashlib.sha3_256)
-        serialized_sig, recover_id = private_key.ecdsa_recoverable_serialize(raw_sig)
-        signature = serialized_sig + bytes((recover_id,))
-        signature_base64str = base64.b64encode(signature).decode('utf-8')
-        return signature_base64str
 
     def test_jwt_decode_address(self):
         key = 'secret'

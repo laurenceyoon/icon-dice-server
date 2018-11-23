@@ -25,7 +25,7 @@ class TestWebsocketClient(unittest.TestCase):
         loop = asyncio.new_event_loop()
         nickname = loop.run_until_complete(self.hello())
 
-        self.assertEqual(nickname, 'nickname')
+        self.assertEqual(nickname, 'ICONDICE websocket')
 
     async def hello(self):
         uri = CONFIG.ws_uri + '/hello'

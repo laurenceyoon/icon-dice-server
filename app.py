@@ -16,7 +16,7 @@ app.session_interface = InMemorySessionInterface()
 
 @app.route('/')
 async def index(_request: Request) -> HTTPResponse:
-    return json({"Hello": "world"})
+    return json({"Hello": "ICONDICE world"})
 
 
 @app.route('/db')

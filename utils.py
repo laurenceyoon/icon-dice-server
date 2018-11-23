@@ -55,14 +55,14 @@ async def get_token_from_login_process(address, private_key):
     response = http_client.request(method_name='login_hash', address=address)
     random_result = json.loads(response.text)['result']
     random_bytes = bytes.fromhex(random_result[2:])
-    signature_base64str = await sign(private_key, random_bytes)
+    signature_base64str = sign(private_key, random_bytes)
     response = http_client.request(method_name='login', address=address, signature=signature_base64str)
     token = json.loads(response.text)['result']
     response = http_client.request(method_name='set_nickname', token=token, nickname=address)
     return token
 
 
-async def sign(private_key: PrivateKey, random_bytes):
+def sign(private_key: PrivateKey, random_bytes):
     raw_sig = private_key.ecdsa_sign_recoverable(msg=random_bytes,
                                                  raw=True,
                                                  digest=hashlib.sha3_256)
