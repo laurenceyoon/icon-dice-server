@@ -110,14 +110,13 @@ token = json.loads(response.text)['result']
     "id": 1234,
     "params": {
         "address": "hxbe258ceb872e08851f1f59694dac2558708ece11"
-        }
     }
 }
 ```
 
 * Response
 
-```json
+```javascript
 {
     "jsonrpc": "2.0",
     "id": 1234,
@@ -130,7 +129,7 @@ token = json.loads(response.text)['result']
 
 * Request
 
-```json
+```javascript
 {
     "jsonrpc": "2.0",
     "method": "login",
@@ -138,18 +137,17 @@ token = json.loads(response.text)['result']
     "params": {
         "address": "hxbe258ceb872e08851f1f59694dac2558708ece11",
         "signature": "VAia7YZ2Ji6igKWzjR2YsGa2m53nKPrfK7uXYW78QLE+ATehAVZPC40szvAiA6NEU5gCYB4c4qaQzqDh2ugcHgA="  // signed by address's private. base64 encoded
-        }
     }
 }
 ```
 
 * Response
 
-```json
+```javascript
 {
     "jsonrpc": "2.0",
     "id": 1234,
-    "result": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiaHg3YjQxMjBmNzRjOTNiNDhmZWQ1OTljM2NiMjJlOGRmOWRlY2RiZThlIn0.X9sR6yIBvOvw7T8wBtUQGRT_CAJWXWgsKzDShH2MYFY" # a jwt token.
+    "result": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiaHg3YjQxMjBmNzRjOTNiNDhmZWQ1OTljM2NiMjJlOGRmOWRlY2RiZThlIn0.X9sR6yIBvOvw7T8wBtUQGRT_CAJWXWgsKzDShH2MYFY" // a jwt token.
 }
 ```
 
@@ -165,7 +163,6 @@ token = json.loads(response.text)['result']
     "params": {
         "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhZGRyZXNzIjoiaHg3YjQxMjBmNzRjOTNiNDhmZWQ1OTljM2NiMjJlOGRmOWRlY2RiZThlIn0.X9sR6yIBvOvw7T8wBtUQGRT_CAJWXWgsKzDShH2MYFY",
         "nickname": "june"
-        }
     }
 }
 ```
@@ -242,7 +239,7 @@ token = json.loads(response.text)['result']
 
 ```json
 {
-   "success"
+   "result": "success"
 }
 ```
 
@@ -258,7 +255,7 @@ token = json.loads(response.text)['result']
 
 * Response
 
-```json
+```javascript
 {
    "player_dice_result": int  // range[1, 6],
    "opposite_dice_result": int  // range[1, 6]
