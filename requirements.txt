@@ -1,5 +1,5 @@
 aiohttp
-sanic==20.12.6
+sanic==20.12.7
 sanic-oauth
 requests
 sanic_session
